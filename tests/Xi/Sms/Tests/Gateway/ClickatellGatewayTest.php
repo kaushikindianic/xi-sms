@@ -21,10 +21,22 @@ class ClickatellGatewayTest extends \PHPUnit_Framework_TestCase
 
         $browser
             ->expects($this->once())
-            ->method('post')
+            ->method('get')
             ->with(
-                'http://api.dr-kobros.com/http/sendmsg?api_id=lussavain&user=lussuta&password=' .
-                'tussia&to=358503028030&text=Pekkis+tassa+lussuttaa.&from=358503028030',
+				$this->callback(function($actual) {
+					$url = parse_url($actual);
+					parse_str($url['query'], $query);
+					return
+						$url['scheme'] === 'http' &&
+						$url['host'] === 'api.dr-kobros.com' &&
+						$url['path'] === '/http/sendmsg' &&
+						$query['api_id'] === 'lussavain' &&
+						$query['user'] === 'lussuta' &&
+						$query['password'] === 'tussia' &&
+						$query['to'] === '358503028030' &&
+						urldecode($query['text']) === 'Pekkis tassa lussuttaa.' &&
+						$query['from'] === '358503028030';
+				}),
                 array()
             );
 

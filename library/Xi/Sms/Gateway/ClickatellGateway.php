@@ -48,16 +48,31 @@ class ClickatellGateway extends BaseHttpRequestGateway
     /**
      * @see GatewayInterface::send
      * @todo Implement a smarter method of sending (batch)
+	 * @param SmsMessage $message
+	 * @param bool $urlEncoding To ensure backwards compatibility
      */
-    public function send(SmsMessage $message)
+    public function send(SmsMessage $message, $urlEncoding = false)
     {
         $body = urlencode(utf8_decode($message->getBody()));
         $from = urlencode($message->getFrom());
 
         foreach ($message->getTo() as $to) {
-            $url = "{$this->endpoint}/http/sendmsg?api_id={$this->apiKey}&user={$this->user}" .
-                "&password={$this->password}&to={$to}&text={$body}&from={$from}";
-            $this->getClient()->post($url, array());
+			$params = array(
+				'api_id' => $this->apiKey,
+				'user' => $this->user,
+				'password' => $this->password,
+				'to' => $to,
+				'text' => $body,
+				'from' => $from
+			);
+			$query_string = $urlEncoding ?
+				"api_id={$this->apiKey}&user={$this->user}" .
+				"&password={$this->password}&to={$to}&text={$body}&from={$from}" :
+				http_build_query($params);
+			$this->getClient()->get(
+				$this->endpoint . '/http/sendmsg?'.$query_string,
+				array()
+			);
         }
         return true;
     }
