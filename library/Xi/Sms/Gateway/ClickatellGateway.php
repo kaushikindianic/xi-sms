@@ -48,35 +48,36 @@ class ClickatellGateway extends BaseHttpRequestGateway
 
     /**
      * @see GatewayInterface::send
-     * @todo Implement a smarter method of sending (batch)
 	 * @param SmsMessage $message
      */
     public function send(SmsMessage $message)
     {
-        foreach ($message->getTo() as $to) {
-			$params = array(
-				'api_id' => $this->apiKey,
-				'user' => $this->user,
-				'password' => $this->password,
-				'to' => $to,
-				'text' => utf8_decode($message->getBody()),
-				'from' => $message->getFrom()
-			);
+		if (count($message->getTo()) > 100) {
+			// @todo chunk $message->getTo() by 100
+			throw new SmsException('Error: sending through to 100+ addresses is not yet implemented');
+		}
 
-			$response_string = $this->getClient()->get(
-				$this->endpoint . '/http/sendmsg?'.http_build_query($params),
-				array()
-			);
-			$response = $this->parseResponse($response_string);
-			if (!empty($response['error'])) {
-				throw new SmsException(sprintf('Error(s): %s', var_export($response['error'], true)));
-			}
-			if (empty($response['id'])) {
-				throw new SmsException(sprintf('Error: No message ID returned'));
-			}
-			return $response['id'];
-        }
-        return true;
+		$params = array(
+			'api_id' => $this->apiKey,
+			'user' => $this->user,
+			'password' => $this->password,
+			'to' => implode(',', $message->getTo()),
+			'text' => utf8_decode($message->getBody()),
+			'from' => $message->getFrom()
+		);
+
+		$response_string = $this->getClient()->get(
+			$this->endpoint . '/http/sendmsg?'.http_build_query($params),
+			array()
+		);
+		$response = $this->parseResponse($response_string);
+		if (!empty($response['error'])) {
+			throw new SmsException(sprintf('Error(s): %s', var_export($response['error'], true)));
+		}
+		if (empty($response['id'])) {
+			throw new SmsException('Error: No message ID returned');
+		}
+		return $response['id'];
     }
 
 	/**

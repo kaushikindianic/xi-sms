@@ -10,6 +10,39 @@ use Buzz\Message\Response;
 
 class ClickatellGatewayTest extends \PHPUnit_Framework_TestCase
 {
+	/**
+	 * @test
+	 */
+	public function sendMultiple()
+	{
+		$gateway = new ClickatellGateway('lussavain', 'lussuta', 'tussia', 'http://api.dr-kobros.com');
+
+		$browser = $this->getMockBuilder('Buzz\Browser')
+			->disableOriginalConstructor()
+			->getMock();
+
+		$gateway->setClient($browser);
+
+		$browser
+			->expects($this->once())
+			->method('get')
+			->with(
+				$this->callback(function($actual) {
+					$url = parse_url($actual);
+					parse_str($url['query'], $query);
+					return $query['to'] === '358503028030,49123456789';
+				}),
+				$this->isType('array')
+			)
+			->will($this->returnValue("ID: QWERTYUI12345678 To: 358503028030\nID: 12345678QWERTYUI To: 49123456789"));
+
+		$message = new \Xi\Sms\SmsMessage(
+			'Pekkis tassa lussuttaa.',
+			'358503028030',
+			array('358503028030', '49123456789')
+		);
+		$ret = $gateway->send($message);
+	}
 
 	/**
 	 * @test
@@ -90,7 +123,8 @@ class ClickatellGatewayTest extends \PHPUnit_Framework_TestCase
 						$query['from'] === '358503028030';
 				}),
                 array()
-            );
+            )
+			->will($this->returnValue('ID: QWERTYUI12345678'));
 
         $message = new \Xi\Sms\SmsMessage(
             'Pekkis tassa lussuttaa.',
@@ -99,6 +133,6 @@ class ClickatellGatewayTest extends \PHPUnit_Framework_TestCase
         );
 
         $ret = $gateway->send($message);
-        $this->assertTrue($ret);
+        $this->assertEquals('QWERTYUI12345678', $ret);
     }
 }
