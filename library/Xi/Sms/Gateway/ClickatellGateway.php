@@ -10,6 +10,7 @@
 namespace Xi\Sms\Gateway;
 
 use Xi\Sms\SmsMessage;
+use Xi\Sms\SmsException;
 
 class ClickatellGateway extends BaseHttpRequestGateway
 {
@@ -49,9 +50,8 @@ class ClickatellGateway extends BaseHttpRequestGateway
      * @see GatewayInterface::send
      * @todo Implement a smarter method of sending (batch)
 	 * @param SmsMessage $message
-	 * @param bool $utf8decode To ensure backwards compatibility
      */
-    public function send(SmsMessage $message, $utf8decode = true)
+    public function send(SmsMessage $message)
     {
         foreach ($message->getTo() as $to) {
 			$params = array(
@@ -59,37 +59,64 @@ class ClickatellGateway extends BaseHttpRequestGateway
 				'user' => $this->user,
 				'password' => $this->password,
 				'to' => $to,
-				'text' => $message->getBody(),
+				'text' => utf8_decode($message->getBody()),
 				'from' => $message->getFrom()
 			);
 
-			// BC
-			if ($utf8decode) {
-				$params['text'] = utf8_decode($params['text']);
-			}
-
-			$this->getClient()->get(
+			$response_string = $this->getClient()->get(
 				$this->endpoint . '/http/sendmsg?'.http_build_query($params),
 				array()
 			);
+			$response = $this->parseResponse($response_string);
+			if (!empty($response['error'])) {
+				throw new SmsException(sprintf('Error(s): %s', var_export($response['error'], true)));
+			}
+			if (empty($response['id'])) {
+				throw new SmsException(sprintf('Error: No message ID returned'));
+			}
+			return $response['id'];
         }
         return true;
     }
 
+	/**
+	 * Parses a Clickatell HTTP API response
+	 * @param string $response
+	 * @return array error messages, messages IDs, phone numbers...
+	 * @throws SmsException
+	 */
 	public static function parseResponse($response) {
 		$return = array(
 			'id' => null,
 			'error' => null
 		);
 		if (preg_match_all('/((ERR|ID): ([^\n]*))+/', $response, $matches)) {
-			for ($i = 1; $i < count($matches[0]); $i++) {
+			for ($i = 0; $i < count($matches[0]); $i++) {
+				$phone_number = null;
+				if (preg_match('/(.*)( To: ([0-9]+))$/', $matches[3][$i], $ms)) {
+					$message = $ms[1];
+					$phone_number = $ms[3];
+				} else {
+					$message = $matches[3][$i];
+				}
+
 				if ($matches[2][$i] === 'ERR') {
-					$return['error'] = $matches[3][$i];
+					if ($phone_number) {
+						$return['error'][$phone_number] = $message;
+					} else {
+						$return['error'] = $message;
+					}
 				} elseif ($matches[2][$i] === 'ID') {
-					$return['id'] = $matches[3][$i];
+					if ($phone_number) {
+						$return['id'][$phone_number] = $message;
+					} else {
+						$return['id'] = $message;
+					}
 				}
 			}
+			return $return;
+		} else {
+			throw new SmsException(sprintf('Could not parse response: %s', $response));
 		}
-		return $return;
 	}
 }
