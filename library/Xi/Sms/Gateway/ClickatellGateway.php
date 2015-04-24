@@ -10,6 +10,7 @@
 namespace Xi\Sms\Gateway;
 
 use Xi\Sms\SmsMessage;
+use Xi\Sms\SmsException;
 
 class ClickatellGateway extends BaseHttpRequestGateway
 {
@@ -47,32 +48,83 @@ class ClickatellGateway extends BaseHttpRequestGateway
 
     /**
      * @see GatewayInterface::send
-     * @todo Implement a smarter method of sending (batch)
 	 * @param SmsMessage $message
-	 * @param bool $utf8decode To ensure backwards compatibility
      */
-    public function send(SmsMessage $message, $utf8decode = true)
+    public function send(SmsMessage $message)
     {
-        foreach ($message->getTo() as $to) {
-			$params = array(
-				'api_id' => $this->apiKey,
-				'user' => $this->user,
-				'password' => $this->password,
-				'to' => $to,
-				'text' => $message->getBody(),
-				'from' => $message->getFrom()
-			);
-
-			// BC
-			if ($utf8decode) {
-				$params['text'] = utf8_decode($params['text']);
+		// Sending is limited to max 100 addressees
+		if (count($message->getTo()) > 100) {
+			$return = array();
+			foreach (array_chunk($message->getTo(), 100) as $tos) {
+				$message_alt = clone $message;
+				$message_alt->setTo($tos);
+				$response = $this->send($message_alt);
+				$return = array_merge($return, $response);
 			}
+			return $return;
+		}
 
-			$this->getClient()->get(
-				$this->endpoint . '/http/sendmsg?'.http_build_query($params),
-				array()
-			);
-        }
-        return true;
+		$params = array(
+			'api_id' => $this->apiKey,
+			'user' => $this->user,
+			'password' => $this->password,
+			'to' => implode(',', $message->getTo()),
+			'text' => utf8_decode($message->getBody()),
+			'from' => $message->getFrom()
+		);
+
+		$response_string = $this->getClient()->get(
+			$this->endpoint . '/http/sendmsg?'.http_build_query($params),
+			array()
+		);
+		$response = $this->parseResponse($response_string);
+		if (!empty($response['error'])) {
+			throw new SmsException(sprintf('Error(s): %s', var_export($response['error'], true)));
+		}
+		if (empty($response['id'])) {
+			throw new SmsException('Error: No message ID returned');
+		}
+		return $response['id'];
     }
+
+	/**
+	 * Parses a Clickatell HTTP API response
+	 * @param string $response
+	 * @return array error messages, messages IDs, phone numbers...
+	 * @throws SmsException
+	 */
+	public static function parseResponse($response) {
+		$return = array(
+			'id' => null,
+			'error' => null
+		);
+		if (preg_match_all('/((ERR|ID): ([^\n]*))+/', $response, $matches)) {
+			for ($i = 0; $i < count($matches[0]); $i++) {
+				$phone_number = null;
+				if (preg_match('/(.*)( To: ([0-9]+))$/', $matches[3][$i], $ms)) {
+					$message = $ms[1];
+					$phone_number = $ms[3];
+				} else {
+					$message = $matches[3][$i];
+				}
+
+				if ($matches[2][$i] === 'ERR') {
+					if ($phone_number) {
+						$return['error'][$phone_number] = $message;
+					} else {
+						$return['error'] = $message;
+					}
+				} elseif ($matches[2][$i] === 'ID') {
+					if ($phone_number) {
+						$return['id'][$phone_number] = $message;
+					} else {
+						$return['id'] = $message;
+					}
+				}
+			}
+			return $return;
+		} else {
+			throw new SmsException(sprintf('Could not parse response: %s', $response));
+		}
+	}
 }
