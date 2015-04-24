@@ -1,5 +1,5 @@
 {
-    "name": "xi/sms",
+    "name": "felixmaier1989/xi-sms",
     "type": "library",
     "description": "Short messaging for PHP 5.3",
     "keywords": ["SMS"],
