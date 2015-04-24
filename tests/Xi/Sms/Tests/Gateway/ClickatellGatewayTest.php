@@ -6,6 +6,17 @@ use Xi\Sms\Gateway\ClickatellGateway;
 
 class ClickatellGatewayTest extends \PHPUnit_Framework_TestCase
 {
+	/**
+	 * @test
+	 */
+	public function parseResponse1()
+	{
+		$response = ClickatellGateway::parseResponse('ERR: 114, Cannot route message');
+		$this->assertArrayHasKey('id', $response);
+		$this->assertArrayHasKey('error', $response);
+		$this->assertEquals('114, Cannot route message', $response['error']);
+	}
+
     /**
      * @test
      */

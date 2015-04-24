@@ -75,4 +75,21 @@ class ClickatellGateway extends BaseHttpRequestGateway
         }
         return true;
     }
+
+	public static function parseResponse($response) {
+		$return = array(
+			'id' => null,
+			'error' => null
+		);
+		if (preg_match_all('/((ERR|ID): ([^\n]*))+/', $response, $matches)) {
+			for ($i = 1; $i < count($matches[0]); $i++) {
+				if ($matches[2][$i] === 'ERR') {
+					$return['error'] = $matches[3][$i];
+				} elseif ($matches[2][$i] === 'ID') {
+					$return['id'] = $matches[3][$i];
+				}
+			}
+		}
+		return $return;
+	}
 }
