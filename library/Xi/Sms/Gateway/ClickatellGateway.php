@@ -52,9 +52,16 @@ class ClickatellGateway extends BaseHttpRequestGateway
      */
     public function send(SmsMessage $message)
     {
+		// Sending is limited to max 100 addressees
 		if (count($message->getTo()) > 100) {
-			// @todo chunk $message->getTo() by 100
-			throw new SmsException('Error: sending through to 100+ addresses is not yet implemented');
+			$return = array();
+			foreach (array_chunk($message->getTo(), 100) as $tos) {
+				$message_alt = clone $message;
+				$message_alt->setTo($tos);
+				$response = $this->send($message_alt);
+				$return = array_merge($return, $response);
+			}
+			return $return;
 		}
 
 		$params = array(

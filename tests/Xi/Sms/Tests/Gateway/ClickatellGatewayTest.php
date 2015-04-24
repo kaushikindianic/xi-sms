@@ -13,7 +13,47 @@ class ClickatellGatewayTest extends \PHPUnit_Framework_TestCase
 	/**
 	 * @test
 	 */
-	public function sendMultiple()
+	public function sendMultiple2()
+	{
+		$gateway = new ClickatellGateway('lussavain', 'lussuta', 'tussia', 'http://api.dr-kobros.com');
+
+		$browser = $this->getMockBuilder('Buzz\Browser')
+			->disableOriginalConstructor()
+			->getMock();
+
+		$gateway->setClient($browser);
+
+		$addressees = array();
+		for ($i = 0; $i < 345; $i++) {
+			$addressees[] = rand();
+		}
+
+		$browser
+			->expects($this->exactly(4))
+			->method('get')
+			->with(
+				$this->callback(function($actual) {
+						$url = parse_url($actual);
+						parse_str($url['query'], $query);
+						return count(explode(',', $query['to'])) === 100 ||
+							count(explode(',', $query['to'])) === 45;
+					}),
+				$this->isType('array')
+			)
+			->will($this->returnValue("ID: QWERTYUI12345678 To: 358503028030\nID: 12345678QWERTYUI To: 49123456789"));
+
+		$message = new \Xi\Sms\SmsMessage(
+			'Pekkis tassa lussuttaa.',
+			'358503028030',
+			$addressees
+		);
+		$ret = $gateway->send($message);
+	}
+
+	/**
+	 * @test
+	 */
+	public function sendMultiple1()
 	{
 		$gateway = new ClickatellGateway('lussavain', 'lussuta', 'tussia', 'http://api.dr-kobros.com');
 
