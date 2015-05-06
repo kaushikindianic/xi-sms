@@ -46,6 +46,34 @@ class ClickatellGateway extends BaseHttpRequestGateway
         $this->endpoint = $endpoint;
     }
 
+	/**
+	 * Authentication
+	 * @return array
+	 * @throws SmsException
+	 */
+	public function authenticate()
+	{
+		$params = array(
+			'api_id' => $this->apiKey,
+			'user' => $this->user,
+			'password' => $this->password,
+		);
+
+		$response_string = $this->getClient()->get(
+			$this->endpoint . '/http/auth?'.http_build_query($params),
+			array()
+		);
+
+		$response = $this->parseResponse($response_string);
+		if (!empty($response['ERR'])) {
+			throw new SmsException(sprintf('Error(s): %s', var_export($response['ERR'], true)));
+		}
+		if (empty($response['OK'])) {
+			throw new SmsException('Error: No Session ID returned');
+		}
+		return $response['OK'];
+	}
+
     /**
      * @see GatewayInterface::send
 	 * @param SmsMessage $message
@@ -78,13 +106,13 @@ class ClickatellGateway extends BaseHttpRequestGateway
 			array()
 		);
 		$response = $this->parseResponse($response_string);
-		if (!empty($response['error'])) {
-			throw new SmsException(sprintf('Error(s): %s', var_export($response['error'], true)));
+		if (!empty($response['ERR'])) {
+			throw new SmsException(sprintf('Error(s): %s', var_export($response['ERR'], true)));
 		}
-		if (empty($response['id'])) {
+		if (empty($response['ID'])) {
 			throw new SmsException('Error: No message ID returned');
 		}
-		return $response['id'];
+		return $response['ID'];
     }
 
 	/**
@@ -98,7 +126,7 @@ class ClickatellGateway extends BaseHttpRequestGateway
 			'id' => null,
 			'error' => null
 		);
-		if (preg_match_all('/((ERR|ID): ([^\n]*))+/', $response, $matches)) {
+		if (preg_match_all('/((ERR|ID|OK): ([^\n]*))+/', $response, $matches)) {
 			for ($i = 0; $i < count($matches[0]); $i++) {
 				$phone_number = null;
 				if (preg_match('/(.*)( To: ([0-9]+))$/', $matches[3][$i], $ms)) {
@@ -108,18 +136,11 @@ class ClickatellGateway extends BaseHttpRequestGateway
 					$message = $matches[3][$i];
 				}
 
-				if ($matches[2][$i] === 'ERR') {
-					if ($phone_number) {
-						$return['error'][$phone_number] = $message;
-					} else {
-						$return['error'] = $message;
-					}
-				} elseif ($matches[2][$i] === 'ID') {
-					if ($phone_number) {
-						$return['id'][$phone_number] = $message;
-					} else {
-						$return['id'] = $message;
-					}
+				$key = $matches[2][$i];
+				if ($phone_number) {
+					$return[$key][$phone_number] = $message;
+				} else {
+					$return[$key] = $message;
 				}
 			}
 			return $return;

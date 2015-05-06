@@ -13,6 +13,83 @@ class ClickatellGatewayTest extends \PHPUnit_Framework_TestCase
 	/**
 	 * @test
 	 */
+	public function parseResponse6()
+	{
+		$response = ClickatellGateway::parseResponse("OK: CE07B3BFEFF35F4E2667B3A47116FDD2");
+		$this->assertEquals('CE07B3BFEFF35F4E2667B3A47116FDD2', $response['OK']);
+	}
+
+	/**
+	 * @test
+	 */
+	public function authenticate2()
+	{
+		$gateway = new ClickatellGateway('lussavain', 'lussuta', 'tussia');
+
+		$browser = $this->getMockBuilder('Buzz\Browser')
+			->disableOriginalConstructor()
+			->getMock();
+
+		$gateway->setClient($browser);
+
+		$browser
+			->expects($this->once())
+			->method('get')
+			->with(
+				$this->callback(function($actual) {
+						$url = parse_url($actual);
+						parse_str($url['query'], $query);
+						return
+							$url['path'] === '/http/auth' &&
+							$query['api_id'] === 'lussavain' &&
+							$query['user'] === 'lussuta' &&
+							$query['password'] === 'tussia';
+					}),
+				array()
+			)
+			->will($this->returnValue(''));
+
+		$this->setExpectedException('Xi\Sms\SmsException');
+		$ret = $gateway->authenticate();
+	}
+
+	/**
+	 * @test
+	 */
+	public function authenticate1()
+	{
+		$gateway = new ClickatellGateway('lussavain', 'lussuta', 'tussia', 'http://api.dr-kobros.com');
+
+		$browser = $this->getMockBuilder('Buzz\Browser')
+			->disableOriginalConstructor()
+			->getMock();
+
+		$gateway->setClient($browser);
+
+		$browser
+			->expects($this->once())
+			->method('get')
+			->with(
+				$this->callback(function($actual) {
+					$url = parse_url($actual);
+					parse_str($url['query'], $query);
+					return
+						$url['path'] === '/http/auth' &&
+						$query['api_id'] === 'lussavain' &&
+						$query['user'] === 'lussuta' &&
+						$query['password'] === 'tussia';
+				}),
+				array()
+			)
+			->will($this->returnValue('OK: QWERTYUI12345678'));
+
+		$ret = $gateway->authenticate();
+		$this->assertEquals('QWERTYUI12345678', $ret);
+	}
+
+	/**
+	 * @test
+	 */
 	public function sendMultiple2()
 	{
 		$gateway = new ClickatellGateway('lussavain', 'lussuta', 'tussia', 'http://api.dr-kobros.com');
@@ -90,8 +167,8 @@ class ClickatellGatewayTest extends \PHPUnit_Framework_TestCase
 	public function parseResponse5()
 	{
 		$response = ClickatellGateway::parseResponse("ERR: 114, Cannot route message To: 49123456789\nERR: 567, Bla bla bla To: 4987654321");
-		$this->assertEquals('114, Cannot route message', $response['error']['49123456789']);
-		$this->assertEquals('567, Bla bla bla', $response['error']['4987654321']);
+		$this->assertEquals('114, Cannot route message', $response['ERR']['49123456789']);
+		$this->assertEquals('567, Bla bla bla', $response['ERR']['4987654321']);
 	}
 
 	/**
@@ -100,8 +177,8 @@ class ClickatellGatewayTest extends \PHPUnit_Framework_TestCase
 	public function parseResponse4()
 	{
 		$response = ClickatellGateway::parseResponse("ID: CE07B3BFEFF35F4E2667B3A47116FDD2 To: 49123456789\nID: QWERTYUIO123456789ASDFGHJK To: 4987654321");
-		$this->assertEquals('CE07B3BFEFF35F4E2667B3A47116FDD2', $response['id']['49123456789']);
-		$this->assertEquals('QWERTYUIO123456789ASDFGHJK', $response['id']['4987654321']);
+		$this->assertEquals('CE07B3BFEFF35F4E2667B3A47116FDD2', $response['ID']['49123456789']);
+		$this->assertEquals('QWERTYUIO123456789ASDFGHJK', $response['ID']['4987654321']);
 	}
 
 	/**
@@ -119,7 +196,7 @@ class ClickatellGatewayTest extends \PHPUnit_Framework_TestCase
 	public function parseResponse2()
 	{
 		$response = ClickatellGateway::parseResponse('ID: CE07B3BFEFF35F4E2667B3A47116FDD2');
-		$this->assertEquals('CE07B3BFEFF35F4E2667B3A47116FDD2', $response['id']);
+		$this->assertEquals('CE07B3BFEFF35F4E2667B3A47116FDD2', $response['ID']);
 	}
 
 	/**
@@ -128,7 +205,7 @@ class ClickatellGatewayTest extends \PHPUnit_Framework_TestCase
 	public function parseResponse1()
 	{
 		$response = ClickatellGateway::parseResponse('ERR: 114, Cannot route message');
-		$this->assertEquals('114, Cannot route message', $response['error']);
+		$this->assertEquals('114, Cannot route message', $response['ERR']);
 	}
 
     /**
