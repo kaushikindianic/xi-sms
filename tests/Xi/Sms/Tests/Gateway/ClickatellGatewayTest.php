@@ -13,6 +13,83 @@ class ClickatellGatewayTest extends \PHPUnit_Framework_TestCase
 	/**
 	 * @test
 	 */
+	public function parseResponse6()
+	{
+		$response = ClickatellGateway::parseResponse("OK: CE07B3BFEFF35F4E2667B3A47116FDD2");
+		$this->assertEquals('CE07B3BFEFF35F4E2667B3A47116FDD2', $response['OK']);
+	}
+
+	/**
+	 * @test
+	 */
+	public function authenticate2()
+	{
+		$gateway = new ClickatellGateway('lussavain', 'lussuta', 'tussia');
+
+		$browser = $this->getMockBuilder('Buzz\Browser')
+			->disableOriginalConstructor()
+			->getMock();
+
+		$gateway->setClient($browser);
+
+		$browser
+			->expects($this->once())
+			->method('get')
+			->with(
+				$this->callback(function($actual) {
+						$url = parse_url($actual);
+						parse_str($url['query'], $query);
+						return
+							$url['path'] === '/http/auth' &&
+							$query['api_id'] === 'lussavain' &&
+							$query['user'] === 'lussuta' &&
+							$query['password'] === 'tussia';
+					}),
+				array()
+			)
+			->will($this->returnValue(''));
+
+		$this->setExpectedException('Xi\Sms\SmsException');
+		$ret = $gateway->authenticate();
+	}
+
+	/**
+	 * @test
+	 */
+	public function authenticate1()
+	{
+		$gateway = new ClickatellGateway('lussavain', 'lussuta', 'tussia', 'http://api.dr-kobros.com');
+
+		$browser = $this->getMockBuilder('Buzz\Browser')
+			->disableOriginalConstructor()
+			->getMock();
+
+		$gateway->setClient($browser);
+
+		$browser
+			->expects($this->once())
+			->method('get')
+			->with(
+				$this->callback(function($actual) {
+					$url = parse_url($actual);
+					parse_str($url['query'], $query);
+					return
+						$url['path'] === '/http/auth' &&
+						$query['api_id'] === 'lussavain' &&
+						$query['user'] === 'lussuta' &&
+						$query['password'] === 'tussia';
+				}),
+				array()
+			)
+			->will($this->returnValue('OK: QWERTYUI12345678'));
+
+		$ret = $gateway->authenticate();
+		$this->assertEquals('QWERTYUI12345678', $ret);
+	}
+
+	/**
+	 * @test
+	 */
 	public function sendMultiple2()
 	{
 		$gateway = new ClickatellGateway('lussavain', 'lussuta', 'tussia', 'http://api.dr-kobros.com');
