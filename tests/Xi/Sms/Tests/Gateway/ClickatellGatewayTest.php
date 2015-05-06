@@ -90,7 +90,7 @@ class ClickatellGatewayTest extends \PHPUnit_Framework_TestCase
 	public function parseResponse5()
 	{
 		$response = ClickatellGateway::parseResponse("ERR: 114, Cannot route message To: 49123456789\nERR: 567, Bla bla bla To: 4987654321");
-		$this->assertEquals('114, Cannot route message', $response['error']['49123456789']);
+		$this->assertEquals('114, Cannot route message', $response['ERR']['49123456789']);
 		$this->assertEquals('567, Bla bla bla', $response['ERR']['4987654321']);
 	}
 

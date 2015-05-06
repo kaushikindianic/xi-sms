@@ -78,13 +78,13 @@ class ClickatellGateway extends BaseHttpRequestGateway
 			array()
 		);
 		$response = $this->parseResponse($response_string);
-		if (!empty($response['error'])) {
-			throw new SmsException(sprintf('Error(s): %s', var_export($response['error'], true)));
+		if (!empty($response['ERR'])) {
+			throw new SmsException(sprintf('Error(s): %s', var_export($response['ERR'], true)));
 		}
-		if (empty($response['id'])) {
+		if (empty($response['ID'])) {
 			throw new SmsException('Error: No message ID returned');
 		}
-		return $response['id'];
+		return $response['ID'];
     }
 
 	/**
