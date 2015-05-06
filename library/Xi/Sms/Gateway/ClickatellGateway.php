@@ -108,18 +108,11 @@ class ClickatellGateway extends BaseHttpRequestGateway
 					$message = $matches[3][$i];
 				}
 
-				if ($matches[2][$i] === 'ERR') {
-					if ($phone_number) {
-						$return['error'][$phone_number] = $message;
-					} else {
-						$return['error'] = $message;
-					}
-				} elseif ($matches[2][$i] === 'ID') {
-					if ($phone_number) {
-						$return['id'][$phone_number] = $message;
-					} else {
-						$return['id'] = $message;
-					}
+				$key = $matches[2][$i];
+				if ($phone_number) {
+					$return[$key][$phone_number] = $message;
+				} else {
+					$return[$key] = $message;
 				}
 			}
 			return $return;

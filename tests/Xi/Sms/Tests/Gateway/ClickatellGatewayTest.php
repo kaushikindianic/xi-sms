@@ -91,7 +91,7 @@ class ClickatellGatewayTest extends \PHPUnit_Framework_TestCase
 	{
 		$response = ClickatellGateway::parseResponse("ERR: 114, Cannot route message To: 49123456789\nERR: 567, Bla bla bla To: 4987654321");
 		$this->assertEquals('114, Cannot route message', $response['error']['49123456789']);
-		$this->assertEquals('567, Bla bla bla', $response['error']['4987654321']);
+		$this->assertEquals('567, Bla bla bla', $response['ERR']['4987654321']);
 	}
 
 	/**
@@ -100,8 +100,8 @@ class ClickatellGatewayTest extends \PHPUnit_Framework_TestCase
 	public function parseResponse4()
 	{
 		$response = ClickatellGateway::parseResponse("ID: CE07B3BFEFF35F4E2667B3A47116FDD2 To: 49123456789\nID: QWERTYUIO123456789ASDFGHJK To: 4987654321");
-		$this->assertEquals('CE07B3BFEFF35F4E2667B3A47116FDD2', $response['id']['49123456789']);
-		$this->assertEquals('QWERTYUIO123456789ASDFGHJK', $response['id']['4987654321']);
+		$this->assertEquals('CE07B3BFEFF35F4E2667B3A47116FDD2', $response['ID']['49123456789']);
+		$this->assertEquals('QWERTYUIO123456789ASDFGHJK', $response['ID']['4987654321']);
 	}
 
 	/**
@@ -119,7 +119,7 @@ class ClickatellGatewayTest extends \PHPUnit_Framework_TestCase
 	public function parseResponse2()
 	{
 		$response = ClickatellGateway::parseResponse('ID: CE07B3BFEFF35F4E2667B3A47116FDD2');
-		$this->assertEquals('CE07B3BFEFF35F4E2667B3A47116FDD2', $response['id']);
+		$this->assertEquals('CE07B3BFEFF35F4E2667B3A47116FDD2', $response['ID']);
 	}
 
 	/**
@@ -128,7 +128,7 @@ class ClickatellGatewayTest extends \PHPUnit_Framework_TestCase
 	public function parseResponse1()
 	{
 		$response = ClickatellGateway::parseResponse('ERR: 114, Cannot route message');
-		$this->assertEquals('114, Cannot route message', $response['error']);
+		$this->assertEquals('114, Cannot route message', $response['ERR']);
 	}
 
     /**
