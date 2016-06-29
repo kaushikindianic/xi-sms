@@ -98,7 +98,12 @@ class ClickatellGateway extends BaseHttpRequestGateway
 			'password' => $this->password,
 			'to' => implode(',', $message->getTo()),
 			'text' => utf8_decode($message->getBody()),
-			'from' => $message->getFrom()
+			'from' => $message->getFrom(),
+			/**
+			 * Mobile originated (required for USA and Canada)
+			 * http://stackoverflow.com/questions/36584831/clickatell-http-api-send-message-fails-with-routing-error-status-9
+			 */
+			'mo' => 1,
 		);
 
 		$response_string = $this->getClient()->get(
