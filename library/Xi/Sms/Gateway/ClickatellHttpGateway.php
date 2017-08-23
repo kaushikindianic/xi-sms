@@ -40,24 +40,31 @@ class ClickatellHttpGateway extends BaseHttpRequestGateway
 	 * @param SmsMessage $message
      */
     public function send(SmsMessage $message)
-    {
+	{
+		$return = [];
+		foreach ($message->getTo() as $to) {
+			$message_id = $this->_send($message->getFrom(), $to, $message->getBody());
+			$return[] = $message_id;
+		}
+		if (count($message->getTo()) === 1) {
+			return reset($return);
+		}
+		return $return;
+	}
 
-		// Sending is limited to max 100 addressees
-//		if (count($message->getTo()) > 100) {
-//			$return = array();
-//			foreach (array_chunk($message->getTo(), 100) as $tos) {
-//				$message_alt = clone $message;
-//				$message_alt->setTo($tos);
-//				$response = $this->send($message_alt);
-//				$return = array_merge($return, $response);
-//			}
-//			return $return;
-//		}
+	/**
+	 * @param string $from
+	 * @param string $to
+	 * @param string $content
+	 * @return string
+	 * @throws SmsException
+	 */
+	protected function _send($from, $to, $content) {
 
 		$params = array(
 			'apiKey' => $this->apiKey,
-			'to' => implode(',', $message->getTo()),
-			'content' => utf8_decode($message->getBody()),
+			'to' => $to,
+			'content' => utf8_decode($content),
 			/**
 			 * Mobile originated (required for USA and Canada)
 			 * http://stackoverflow.com/questions/36584831/clickatell-http-api-send-message-fails-with-routing-error-status-9
@@ -65,8 +72,8 @@ class ClickatellHttpGateway extends BaseHttpRequestGateway
 			'mo' => 1,
 		);
 
-		if ($message->getFrom()) {
-			$params['from'] = $message->getFrom();
+		if ($from) {
+			$params['from'] = $from;
 		}
 
 		$response = $this->getClient()->get(

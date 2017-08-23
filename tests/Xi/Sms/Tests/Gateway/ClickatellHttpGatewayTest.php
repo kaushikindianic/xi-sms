@@ -4,6 +4,36 @@ namespace Xi\Sms\Tests\Gateway;
 
 class ClickatellHttpGatewayTest extends \PHPUnit_Framework_TestCase
 {
+
+	/**
+	 * @test
+	 */
+	public function test_send_multiple()
+	{
+		$gateway = new \Xi\Sms\Gateway\ClickatellHttpGateway('XXXXXXXXXX-X-XXXXXXXXX==');
+
+		$browser = $this->getMockBuilder('Buzz\Browser')
+			->disableOriginalConstructor()
+			->getMock();
+
+		$gateway->setClient($browser);
+
+		$Response = new \Buzz\Message\Response();
+		$Response->setContent('{"messages":[{"apiMessageId":"QWERTYUI12345678","accepted":true,"to":"358503028030","error":null}],"error":null}');
+
+		$browser
+			->expects($this->exactly(2))
+			->method('get')
+			->will($this->returnValue($Response));
+
+		$message = new \Xi\Sms\SmsMessage(
+			'Pekkis tassa lussuttaa.',
+			'358503028030',
+			array('358503028030', '49123456789')
+		);
+		$ret = $gateway->send($message);
+	}
+
     /**
      * @test
      */
