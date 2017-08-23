@@ -64,7 +64,7 @@ class ClickatellHttpGateway extends BaseHttpRequestGateway
 		$params = array(
 			'apiKey' => $this->apiKey,
 			'to' => $to,
-			'content' => utf8_decode($content),
+			'content' => $content,
 			/**
 			 * Mobile originated (required for USA and Canada)
 			 * http://stackoverflow.com/questions/36584831/clickatell-http-api-send-message-fails-with-routing-error-status-9
