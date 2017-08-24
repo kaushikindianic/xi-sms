@@ -64,7 +64,7 @@ class ClickatellHttpGateway extends BaseHttpRequestGateway
 		$params = array(
 			'apiKey' => $this->apiKey,
 			'to' => $to,
-			'content' => utf8_decode($content),
+			'content' => $content,
 			/**
 			 * Mobile originated (required for USA and Canada)
 			 * http://stackoverflow.com/questions/36584831/clickatell-http-api-send-message-fails-with-routing-error-status-9
@@ -88,6 +88,11 @@ class ClickatellHttpGateway extends BaseHttpRequestGateway
 		// If Body is not JSON-encoded
 		if (json_last_error() != JSON_ERROR_NONE) {
 			throw new SmsException(sprintf('Could not parse API response: %s', var_export($response->getContent(), true)));
+		}
+
+		// If the error is about two-way integration
+		if ($from && !empty($body['error']) && strpos(strtolower($body['error']), 'two-way') !== false) {
+			return $this->_send(null, $to, $content);
 		}
 
 		if (!empty($body['error']) || empty($body['messages'])) {
