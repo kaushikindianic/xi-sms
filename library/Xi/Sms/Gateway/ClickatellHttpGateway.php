@@ -90,6 +90,11 @@ class ClickatellHttpGateway extends BaseHttpRequestGateway
 			throw new SmsException(sprintf('Could not parse API response: %s', var_export($response->getContent(), true)));
 		}
 
+		// If the error is about two-way integration
+		if ($from && !empty($body['error']) && strpos(strtolower($body['error']), 'two-way') !== false) {
+			return $this->_send(null, $to, $content);
+		}
+
 		if (!empty($body['error']) || empty($body['messages'])) {
 			throw new SmsException(sprintf('Error(s): %s', var_export($body, true)));
 		}
