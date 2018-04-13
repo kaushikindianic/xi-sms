@@ -34,6 +34,45 @@ class ClickatellHttpGatewayTest extends \PHPUnit_Framework_TestCase
 		$ret = $gateway->send($message);
 	}
 
+	/**
+	 * @test
+	 */
+	public function test_send_twoWay()
+	{
+		$gateway = new \Xi\Sms\Gateway\ClickatellHttpGateway('XXXXXXXXXX-X-XXXXXXXXX==');
+
+		$browser = $this->getMockBuilder('Buzz\Browser')
+			->disableOriginalConstructor()
+			->getMock();
+
+		$gateway->setClient($browser);
+
+		$Response = new \Buzz\Message\Response();
+		$Response->setContent('{"messages":[],"errorCode":607,"error":"User specified FROM number, but integration isnt two-way.","errorDescription":""}');
+
+		$browser
+			->expects($this->at(0))
+			->method('get')
+			->will($this->returnValue($Response));
+
+		$Response = new \Buzz\Message\Response();
+		$Response->setContent('{"messages":[{"apiMessageId":"QWERTYUI12345678","accepted":true,"to":"358503028030","error":null}],"error":null}');
+
+		$browser
+			->expects($this->at(1))
+			->method('get')
+			->will($this->returnValue($Response));
+
+		$message = new \Xi\Sms\SmsMessage(
+			'Pekkis tassa lussuttaa.',
+			'358503028030',
+			'358503028030'
+		);
+
+		$ret = $gateway->send($message);
+		$this->assertEquals('QWERTYUI12345678', $ret);
+	}
+
     /**
      * @test
      */
