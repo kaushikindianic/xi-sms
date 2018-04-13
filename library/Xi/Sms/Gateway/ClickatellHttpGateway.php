@@ -91,7 +91,10 @@ class ClickatellHttpGateway extends BaseHttpRequestGateway
 		}
 
 		// If the error is about two-way integration
-		if ($from && !empty($body['error']) && strpos(strtolower($body['error']), 'two-way') !== false) {
+		if ($from &&
+			((!empty($body['error']) && strpos(strtolower($body['error']), 'two-way') !== false)
+			|| (!empty($body['error']) && strpos(strtolower($body['errorDescription']), 'two-way') !== false))
+		) {
 			return $this->_send(null, $to, $content);
 		}
 
