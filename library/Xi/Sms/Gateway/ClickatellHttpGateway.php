@@ -91,10 +91,7 @@ class ClickatellHttpGateway extends BaseHttpRequestGateway
 		}
 
 		// If the error is about two-way integration
-		if ($from &&
-			((!empty($body['error']) && strpos(strtolower($body['error']), 'two-way') !== false)
-			|| (!empty($body['errorDescription']) && strpos(strtolower($body['errorDescription']), 'two-way') !== false))
-		) {
+		if ($from && $this->isErrorTwoWay($body)) {
 			return $this->_send(null, $to, $content);
 		}
 
@@ -110,4 +107,34 @@ class ClickatellHttpGateway extends BaseHttpRequestGateway
 
 		return $message['apiMessageId'];
     }
+
+	/**
+	 * Check if the error is about two-way integration
+	 * @param array $body
+	 * @return bool
+	 */
+	protected function isErrorTwoWay($body) {
+
+		if ((!empty($body['error']) && strpos(strtolower($body['error']), 'two-way') !== false)) {
+			return true;
+		}
+
+		if ((!empty($body['errorDescription']) && strpos(strtolower($body['errorDescription']), 'two-way') !== false)) {
+			return true;
+		}
+
+		if (!empty($body['messages'])) {
+			foreach ($body['messages'] as $message) {
+				if ((!empty($message['error']) && strpos(strtolower($message['error']), 'two-way') !== false)) {
+					return true;
+				}
+
+				if ((!empty($message['errorDescription']) && strpos(strtolower($message['errorDescription']), 'two-way') !== false)) {
+					return true;
+				}
+			}
+		}
+
+		return false;
+	}
 }

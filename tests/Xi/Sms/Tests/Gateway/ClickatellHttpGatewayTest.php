@@ -37,6 +37,63 @@ class ClickatellHttpGatewayTest extends \PHPUnit_Framework_TestCase
 	/**
 	 * @test
 	 */
+	public function test_send_twoWay_errorDescription_2()
+	{
+		$gateway = new \Xi\Sms\Gateway\ClickatellHttpGateway('XXXXXXXXXX-X-XXXXXXXXX==');
+
+		$browser = $this->getMockBuilder('Buzz\Browser')
+			->disableOriginalConstructor()
+			->getMock();
+
+		$gateway->setClient($browser);
+
+		$response_body = array (
+			'messages' =>
+				array (
+					0 =>
+						array (
+							'apiMessageId' => NULL,
+							'accepted' => false,
+							'to' => '33652008811',
+							'errorCode' => 656,
+							'error' => '	Destination country two-way error.',
+							'errorDescription' => 'Destination country doesn\'t support two-way messaging.',
+						),
+				),
+			'errorCode' => NULL,
+			'error' => NULL,
+			'errorDescription' => NULL,
+		);
+
+		$Response = new \Buzz\Message\Response();
+		$Response->setContent(json_encode($response_body));
+
+		$browser
+			->expects($this->at(0))
+			->method('get')
+			->will($this->returnValue($Response));
+
+		$Response = new \Buzz\Message\Response();
+		$Response->setContent('{"messages":[{"apiMessageId":"QWERTYUI12345678","accepted":true,"to":"358503028030","error":null}],"error":null}');
+
+		$browser
+			->expects($this->at(1))
+			->method('get')
+			->will($this->returnValue($Response));
+
+		$message = new \Xi\Sms\SmsMessage(
+			'Pekkis tassa lussuttaa.',
+			'358503028030',
+			'358503028030'
+		);
+
+		$ret = $gateway->send($message);
+		$this->assertEquals('QWERTYUI12345678', $ret);
+	}
+
+	/**
+	 * @test
+	 */
 	public function test_send_twoWay_errorDescription()
 	{
 		$gateway = new \Xi\Sms\Gateway\ClickatellHttpGateway('XXXXXXXXXX-X-XXXXXXXXX==');
