@@ -27,21 +27,33 @@ class TwilioGateway extends BaseHttpRequestGateway
      */
     private $authToken;
 
-    /**
-     * @var string
-     */
-    private $numberFrom;
+	/**
+	 * @var string
+	 */
+	private $numberFrom;
 
+	/**
+	 * @var string|null
+	 */
+	private $messagingServiceId;
+
+	/**
+	 * TwilioGateway constructor.
+	 * @param string $accountSid Your Account SID from twilio.com/console
+	 * @param string $authToken Your Auth Token from twilio.com/console
+	 * @param string $numberFrom A Twilio phone number you purchased at twilio.com/console
+	 * @param string|null $messagingServiceId
+	 */
     public function __construct(
         $accountSid,
         $authToken,
-        $numberFrom
+        $numberFrom,
+		$messagingServiceId = null
     ) {
-        // Your Account SID and Auth Token from twilio.com/console
         $this->accountSid = $accountSid;
         $this->authToken = $authToken;
-        // A Twilio phone number you purchased at twilio.com/console
-        $this->numberFrom = $numberFrom;
+		$this->numberFrom = $numberFrom;
+		$this->messagingServiceId = $messagingServiceId;
     }
 
     /**
@@ -78,15 +90,20 @@ class TwilioGateway extends BaseHttpRequestGateway
             throw new SmsException('Invalid Twilio configuration');
         }
 
+        $params = array(
+			'from' => '+' . $this->numberFrom,
+			// the body of the text message you'd like to send
+			'body' => $content,
+		);
+        if ($this->messagingServiceId) {
+			$params['messagingServiceId'] = $this->messagingServiceId;
+		}
+
         // Use the client to do fun stuff like send text messages!
         $MessageInstance = $client->messages->create(
         // the number you'd like to send the message to
             '+' . $to,
-            array(
-                'from' => '+' . $this->numberFrom,
-                // the body of the text message you'd like to send
-                'body' => $content,
-            )
+			$params
         );
         $MessageInstance = $MessageInstance->toArray();
         if (empty($MessageInstance['sid'])) {
